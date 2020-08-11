@@ -1,14 +1,9 @@
 # flutter_kiosk
 
-A new Flutter plugin.
+A Flutter plugin for kiosk mode in Android
 
 ## Getting Started
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/developing-packages/),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
+To get the checksum of apk:
 
-For help getting started with Flutter, view our 
-[online documentation](https://flutter.dev/docs), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
+    $ apksigner verify -print-certs *.apk | grep -Po "(?<=SHA-256 digest:) .*" | xxd -r -p | openssl base64 | tr -- '+/' '-_'
