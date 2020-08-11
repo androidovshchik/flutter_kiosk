@@ -3,6 +3,7 @@ package androidovshchik.flutter_kiosk
 import android.app.IntentService
 import android.content.Intent
 import android.content.pm.PackageInstaller.SessionParams
+import android.os.ResultReceiver
 import androidovshchik.flutter_kiosk.extension.isConnected
 import androidovshchik.flutter_kiosk.extension.isDeviceOwner
 import androidovshchik.flutter_kiosk.extension.pendingReceiverFor
@@ -14,6 +15,7 @@ class UpdateService : IntentService("UpdateService") {
 
     override fun onHandleIntent(intent: Intent?) {
         if (!isDeviceOwner || !connectivityManager.isConnected) {
+            sendResult(intent, -1)
             return
         }
         try {
@@ -41,8 +43,17 @@ class UpdateService : IntentService("UpdateService") {
                         .intentSender
                 )
             }
+            sendResult(intent, 0)
         } catch (e: Throwable) {
             e.printStackTrace()
+            sendResult(intent, -1)
+        }
+    }
+
+    private fun sendResult(intent: Intent?, resultCode: Int = 0) {
+        if (intent?.hasExtra("callback") == true) {
+            intent.getParcelableExtra<ResultReceiver>("callback")
+                .send(resultCode, null)
         }
     }
 }

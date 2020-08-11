@@ -9,7 +9,11 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
+import org.jetbrains.anko.devicePolicyManager
 import org.jetbrains.anko.intentFor
+
+val Context.isDeviceOwner: Boolean
+    get() = devicePolicyManager.isDeviceOwnerApp(packageName)
 
 tailrec fun Context?.getActivity(): Activity? = when (this) {
     is Activity -> this
