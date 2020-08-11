@@ -15,7 +15,33 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
 
-  String _info = "";
+  String _info = "No info";
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text('Kiosk app'),
+        ),
+        body: SingleChildScrollView(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(_info,
+                  textAlign: TextAlign.center, style: TextStyle(fontSize: 16)),
+              SizedBox(height: 16),
+              RaisedButton(
+                child: Text('isDeviceOwner', style: TextStyle(fontSize: 16)),
+                onPressed: isDeviceOwner,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   Future<void> isDeviceOwner() async {
     String info;
@@ -28,27 +54,5 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       _info = info;
     });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text('Kiosk app'),
-        ),
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              Text(_info),
-              RaisedButton(
-                child: Text('isDeviceOwner'),
-                onPressed: isDeviceOwner,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
