@@ -3,11 +3,9 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 
 class FlutterKiosk {
-  static const MethodChannel _channel =
-      const MethodChannel('flutter_kiosk');
+  static const MethodChannel _channel = const MethodChannel('flutter_kiosk');
 
-  static Future<String> get platformVersion async {
-    final String version = await _channel.invokeMethod('getPlatformVersion');
-    return version;
+  static Future<bool> get isDeviceOwner async {
+    return await _channel.invokeMethod('isDeviceOwner');
   }
 }
