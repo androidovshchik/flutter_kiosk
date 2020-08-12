@@ -9,10 +9,18 @@ class FlutterKiosk {
     return await _channel.invokeMethod('isDeviceOwner');
   }
 
-  static Future<void> enableLockTask(bool enable) async {
-    return await _channel.invokeMethod('enableLockTask', <String, dynamic>{
+  static Future<void> toggleLockTask(bool enable) async {
+    return await _channel.invokeMethod('toggleLockTask', <String, dynamic>{
       'enable': enable,
     });
+  }
+
+  static Future<void> startLockTask() async {
+    return await _channel.invokeMethod('startLockTask');
+  }
+
+  static Future<void> stopLockTask() async {
+    return await _channel.invokeMethod('stopLockTask');
   }
 
   static Future<void> setKeyguardDisabled(bool disabled) async {
@@ -28,8 +36,7 @@ class FlutterKiosk {
   }
 
   static Future<void> clearUserRestrictions(List<String> keys) async {
-    return await _channel
-        .invokeMethod('clearUserRestrictions', <String, dynamic>{
+    return await _channel.invokeMethod('clearUserRestrictions', <String, dynamic>{
       'keys': keys,
     });
   }

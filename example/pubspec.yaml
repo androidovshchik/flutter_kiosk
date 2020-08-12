@@ -12,6 +12,8 @@ dependencies:
   flutter:
     sdk: flutter
 
+  screen: ^0.0.5
+
   flutter_kiosk:
     # When depending on this package from a real application you should use:
     #   flutter_kiosk: ^x.y.z

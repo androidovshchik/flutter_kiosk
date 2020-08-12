@@ -1,11 +1,10 @@
 package androidovshchik.flutter_kiosk
 
-import android.app.admin.DevicePolicyManager
+import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
 import android.os.Bundle
 import android.os.ResultReceiver
-import android.os.UserManager
 import androidovshchik.flutter_kiosk.extension.isDeviceOwner
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -15,7 +14,6 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import org.jetbrains.anko.devicePolicyManager
-import org.jetbrains.anko.runOnUiThread
 import org.jetbrains.anko.startService
 
 @Suppress("unused")
@@ -27,6 +25,8 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     /// when the Flutter Engine is detached from the Activity
     private lateinit var channel: MethodChannel
 
+    private var activity: Activity? = null
+
     private lateinit var context: Context
 
     @Suppress("DEPRECATION")
@@ -37,9 +37,11 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     }
 
     override fun onAttachedToActivity(activityBinding: ActivityPluginBinding) {
+        activity = activityBinding.activity
     }
 
     override fun onReattachedToActivityForConfigChanges(activityBinding: ActivityPluginBinding) {
+        onAttachedToActivity(activityBinding)
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
@@ -54,12 +56,18 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         val dpm = context.devicePolicyManager
         val adminComponent = ComponentName(context, AdminReceiver::class.java)
         when (call.method) {
-            "enableLockTask" -> {
+            "toggleLockTask" -> {
                 dpm.setLockTaskPackages(adminComponent, if (call.argument("enable")!!) {
                     arrayOf(context.packageName)
                 } else {
                     emptyArray()
                 })
+            }
+            "startLockTask" -> {
+                activity?.startLockTask()
+            }
+            "stopLockTask" -> {
+                activity?.stopLockTask()
             }
             "setKeyguardDisabled" -> {
                 dpm.setKeyguardDisabled(adminComponent, call.argument("disabled")!!)
@@ -74,27 +82,13 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                     dpm.clearUserRestriction(adminComponent, it)
                 }
             }
-            "startLock" -> {
-                if (isDeviceOwner) {
-                    setRestrictions(enable)
-                    deviceManager.setKeyguardDisabled(adminComponent, enable)
-                    setLockTask(enable)
-                    return true
-                }
-
-                if (enable) {
-                    context.devicePolicyManager.setLockTaskPackages(component, arrayOf(packageName))
-                } else {
-                    setLockTaskPackages(component, arrayOf())
-                }
-            }
             "installUpdate" -> {
                 context.startService<UpdateService>(
                     "url" to call.argument("url"),
                     "callback" to object : ResultReceiver(null) {
 
                         override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
-                            context.runOnUiThread {
+                            activity?.runOnUiThread {
                                 if (resultCode == 0) {
                                     result.success(null)
                                 } else {
@@ -111,12 +105,15 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             }
             else -> result.notImplemented()
         }
+        result.success(null)
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
+        onDetachedFromActivity()
     }
 
     override fun onDetachedFromActivity() {
+        activity = null
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
