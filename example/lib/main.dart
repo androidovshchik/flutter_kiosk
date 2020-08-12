@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_kiosk/flutter_kiosk.dart';
@@ -27,27 +25,12 @@ class _MyAppState extends State<MyApp> {
     UserManager.DISALLOW_ADD_MANAGED_PROFILE;
   }
 
-  void execute(Future<dynamic> future) async {
-    if (_executing) {
-      return;
+  void showMessage(String message) {
+    if (mounted) {
+      setState(() {
+        _message = message;
+      });
     }
-    _executing = true;
-    setState(() {
-      _message = 'Please, wait...';
-    });
-    String message;
-    try {
-      message = (await future)?.toString();
-    } on PlatformException catch (error) {
-      message = error?.message;
-    }
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _message = message;
-    });
-    _executing = false;
   }
 
   void startLock() async {
@@ -55,8 +38,12 @@ class _MyAppState extends State<MyApp> {
       if (await FlutterKiosk.isDeviceOwner) {
         await FlutterKiosk.toggleLockTask(true);
         await FlutterKiosk.startLockTask();
+      } else {
+        showMessage('This app is not a device owner');
       }
-    } on PlatformException catch (error) {}
+    } on PlatformException catch (e) {
+      showMessage(e?.message);
+    }
   }
 
   void stopLock() async {
@@ -64,8 +51,12 @@ class _MyAppState extends State<MyApp> {
       if (await FlutterKiosk.isDeviceOwner) {
         await FlutterKiosk.stopLockTask();
         await FlutterKiosk.toggleLockTask(false);
+      } else {
+        showMessage('This app is not a device owner');
       }
-    } on PlatformException catch (error) {}
+    } on PlatformException catch (e) {
+      showMessage(e?.message);
+    }
   }
 
   @override
@@ -73,7 +64,7 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: Text('Kiosk app', style: TextStyle(fontSize: 16)),
+          title: Text('Kiosk app'),
         ),
         body: Container(
           padding: EdgeInsets.all(16),
@@ -96,8 +87,11 @@ class _MyAppState extends State<MyApp> {
               RaisedButton(
                 child: Text('installUpdate', style: TextStyle(fontSize: 16)),
                 onPressed: () {
-                  execute(FlutterKiosk.installUpdate(
-                      'https://github.com/androidovshchik/flutter_kiosk/releases/download/apk/app-release.apk'));
+                  FlutterKiosk.installUpdate(
+                          'https://github.com/androidovshchik/flutter_kiosk/releases/download/apk/app-release.apk')
+                      .catchError((e) {
+                    showMessage(e?.message);
+                  }).whenComplete(() {});
                 },
               ),
             ],

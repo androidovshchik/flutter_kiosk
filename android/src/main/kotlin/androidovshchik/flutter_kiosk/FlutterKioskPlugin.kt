@@ -88,6 +88,7 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
                         }
                     }
                 )
+                return
             }
             "startLockTask" -> {
                 hasLockTask = true

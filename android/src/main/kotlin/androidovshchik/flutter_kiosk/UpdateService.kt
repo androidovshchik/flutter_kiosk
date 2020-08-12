@@ -15,16 +15,12 @@ import java.net.URL
 class UpdateService : IntentService("UpdateService") {
 
     override fun onHandleIntent(intent: Intent?) {
-        val url = intent?.getStringExtra("url")
-        if (!url.isNullOrBlank()) {
-            reportError(intent, "message" to "Invalid url")
-            return
-        }
         if (!connectivityManager.isConnected) {
             reportError(intent, "message" to "No internet connection")
             return
         }
         try {
+            val url = intent?.getStringExtra("url")
             val connection = URL(url).openConnection() as HttpURLConnection
             val packageInstaller = packageManager.packageInstaller
             val params = SessionParams(SessionParams.MODE_FULL_INSTALL)
