@@ -9,9 +9,9 @@ class FlutterKiosk {
     return await _channel.invokeMethod('isDeviceOwner');
   }
 
-  static Future<void> toggleLockTask(bool enable) async {
-    return await _channel.invokeMethod('toggleLockTask', <String, dynamic>{
-      'enable': enable,
+  static Future<void> installUpdate(String url) async {
+    return await _channel.invokeMethod('installUpdate', <String, dynamic>{
+      'url': url,
     });
   }
 
@@ -23,9 +23,40 @@ class FlutterKiosk {
     return await _channel.invokeMethod('stopLockTask');
   }
 
+  static Future<void> toggleLockTask(bool enable) async {
+    return await _channel.invokeMethod('toggleLockTask', <String, dynamic>{
+      'enable': enable,
+    });
+  }
+
+  static Future<void> setGlobalSetting(String setting, String value) async {
+    return await _channel.invokeMethod('setGlobalSetting', <String, dynamic>{
+      'setting': setting,
+      'value': value,
+    });
+  }
+
   static Future<void> setKeyguardDisabled(bool disabled) async {
     return await _channel.invokeMethod('setKeyguardDisabled', <String, dynamic>{
       'disabled': disabled,
+    });
+  }
+
+  static Future<void> setStatusBarDisabled(bool disabled) async {
+    return await _channel.invokeMethod('setStatusBarDisabled', <String, dynamic>{
+      'disabled': disabled,
+    });
+  }
+
+  static Future<void> addPersistentPreferredActivity(List<String> keys) async {
+    return await _channel.invokeMethod('addPersistentPreferredActivity', <String, dynamic>{
+      'keys': keys,
+    });
+  }
+
+  static Future<void> clearPersistentPreferredActivities(List<String> keys) async {
+    return await _channel.invokeMethod('clearPersistentPreferredActivities', <String, dynamic>{
+      'keys': keys,
     });
   }
 
@@ -38,12 +69,6 @@ class FlutterKiosk {
   static Future<void> clearUserRestrictions(List<String> keys) async {
     return await _channel.invokeMethod('clearUserRestrictions', <String, dynamic>{
       'keys': keys,
-    });
-  }
-
-  static Future<void> installUpdate(String url) async {
-    return await _channel.invokeMethod('installUpdate', <String, dynamic>{
-      'url': url,
     });
   }
 }

@@ -19,10 +19,6 @@ import org.jetbrains.anko.startService
 @Suppress("unused")
 class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
-    /// The MethodChannel that will the communication between Flutter and native Android
-    ///
-    /// This local reference serves to register the plugin with the Flutter Engine and unregister it
-    /// when the Flutter Engine is detached from the Activity
     private lateinit var channel: MethodChannel
 
     private var activity: Activity? = null
@@ -56,32 +52,6 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         val dpm = context.devicePolicyManager
         val adminComponent = ComponentName(context, AdminReceiver::class.java)
         when (call.method) {
-            "toggleLockTask" -> {
-                dpm.setLockTaskPackages(adminComponent, if (call.argument("enable")!!) {
-                    arrayOf(context.packageName)
-                } else {
-                    emptyArray()
-                })
-            }
-            "startLockTask" -> {
-                activity?.startLockTask()
-            }
-            "stopLockTask" -> {
-                activity?.stopLockTask()
-            }
-            "setKeyguardDisabled" -> {
-                dpm.setKeyguardDisabled(adminComponent, call.argument("disabled")!!)
-            }
-            "addUserRestrictions" -> {
-                call.argument<List<String>>("keys")!!.forEach {
-                    dpm.addUserRestriction(adminComponent, it)
-                }
-            }
-            "clearUserRestrictions" -> {
-                call.argument<List<String>>("keys")!!.forEach {
-                    dpm.clearUserRestriction(adminComponent, it)
-                }
-            }
             "installUpdate" -> {
                 context.startService<UpdateService>(
                     "url" to call.argument("url"),
@@ -103,7 +73,48 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                     }
                 )
             }
-            else -> result.notImplemented()
+            "startLockTask" -> {
+                activity?.startLockTask()
+            }
+            "stopLockTask" -> {
+                activity?.stopLockTask()
+            }
+            "toggleLockTask" -> {
+                dpm.setLockTaskPackages(adminComponent, if (call.argument("enable")!!) {
+                    arrayOf(context.packageName)
+                } else {
+                    emptyArray()
+                })
+            }
+            "setGlobalSetting" -> {
+                dpm.setGlobalSetting(adminComponent, call.argument("setting"), call.argument("value"))
+            }
+            "setKeyguardDisabled" -> {
+                dpm.setKeyguardDisabled(adminComponent, call.argument("disabled")!!)
+            }
+            "setStatusBarDisabled" -> {
+                dpm.setStatusBarDisabled(adminComponent, call.argument("disabled")!!)
+            }
+            "addPersistentPreferredActivity" -> {
+                dpm.addPersistentPreferredActivity(adminComponent, ,)
+            }
+            "clearPersistentPreferredActivities" -> {
+                dpm.clearPackagePersistentPreferredActivities(adminComponent, context.packageName)
+            }
+            "addUserRestrictions" -> {
+                call.argument<List<String>>("keys")!!.forEach {
+                    dpm.addUserRestriction(adminComponent, it)
+                }
+            }
+            "clearUserRestrictions" -> {
+                call.argument<List<String>>("keys")!!.forEach {
+                    dpm.clearUserRestriction(adminComponent, it)
+                }
+            }
+            else -> {
+                result.notImplemented()
+                return
+            }
         }
         result.success(null)
     }
