@@ -8,19 +8,23 @@ import androidovshchik.flutter_kiosk.extension.isConnected
 import androidovshchik.flutter_kiosk.extension.pendingReceiverFor
 import org.jetbrains.anko.bundleOf
 import org.jetbrains.anko.connectivityManager
+import org.jetbrains.anko.getStackTraceString
 import java.net.HttpURLConnection
 import java.net.URL
 
 class UpdateService : IntentService("UpdateService") {
 
     override fun onHandleIntent(intent: Intent?) {
+        val url = intent?.getStringExtra("url")
+        if (!url.isNullOrBlank()) {
+            reportError(intent, "message" to "Invalid url")
+            return
+        }
         if (!connectivityManager.isConnected) {
-            reportError(intent, "code" to "no_internet")
+            reportError(intent, "message" to "No internet connection")
             return
         }
         try {
-            val url = intent?.getStringExtra("url")
-            check(!url.isNullOrBlank()) { "Invalid url" }
             val connection = URL(url).openConnection() as HttpURLConnection
             val packageInstaller = packageManager.packageInstaller
             val params = SessionParams(SessionParams.MODE_FULL_INSTALL)
@@ -41,7 +45,7 @@ class UpdateService : IntentService("UpdateService") {
             // normally app will be terminated here
         } catch (e: Throwable) {
             e.printStackTrace()
-            reportError(intent, "code" to "exception", "message" to e.message, "details" to e.toString())
+            reportError(intent, "message" to e.message, "details" to e.getStackTraceString())
         }
     }
 
