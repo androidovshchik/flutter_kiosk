@@ -1,13 +1,17 @@
 package androidovshchik.flutter_kiosk
 
 import android.app.Activity
+import android.app.ActivityManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.ResultReceiver
 import androidovshchik.flutter_kiosk.extension.isDeviceOwner
+import androidx.annotation.UiThread
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
@@ -18,6 +22,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import org.jetbrains.anko.activityManager
 import org.jetbrains.anko.devicePolicyManager
 import org.jetbrains.anko.startService
 
@@ -31,6 +36,8 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
     private var activity: Activity? = null
 
     private var lifecycle: Lifecycle? = null
+
+    private var hasLockTask = false
 
     @Suppress("DEPRECATION")
     override fun onAttachedToEngine(flutterBinding: FlutterPlugin.FlutterPluginBinding) {
@@ -53,16 +60,22 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     fun onActivityResumed() {
-
+        if (hasLockTask) {
+            if (activity?.activityManager.lockTaskModeState == ActivityManager.LOCK_TASK_MODE_NONE) {
+                startLockTask()
+            }
+            activity?.startLockTask()
+        }
     }
 
+    @UiThread
     override fun onMethodCall(call: MethodCall, result: Result) {
         val isDeviceOwner = context.isDeviceOwner
         if (call.method == "isDeviceOwner") {
             result.success(isDeviceOwner)
             return
         } else if (!isDeviceOwner) {
-            result.error("no_rights", null, null)
+            result.error(EMPTY_CODE, "This app is not a device owner", null)
             return
         }
         val pm = context.packageManager
@@ -73,24 +86,22 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
             "installUpdate" -> {
                 context.startService<UpdateService>(
                     "url" to call.argument("url"),
-                    "callback" to object : ResultReceiver(null) {
+                    "callback" to object : ResultReceiver(Handler(Looper.getMainLooper())) {
 
                         override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
-                            activity?.runOnUiThread {
-                                result.error(
-                                    resultData?.getString("code") ?: "unknown",
-                                    resultData?.getString("message"),
-                                    resultData?.getString("details")
-                                )
-                            }
+                            result.error(EMPTY_CODE, resultData?.getString("message"), resultData?.getString("details"))
                         }
                     }
                 )
             }
             "startLockTask" -> {
-                activity?.startLockTask()
+                hasLockTask = true
+                if (lifecycle?.currentState == Lifecycle.State.RESUMED) {
+                    activity?.startLockTask()
+                }
             }
             "stopLockTask" -> {
+                hasLockTask = false
                 activity?.stopLockTask()
             }
             "toggleLockTask" -> {
@@ -101,11 +112,7 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
                 })
             }
             "setGlobalSetting" -> {
-                dpm.setGlobalSetting(
-                    component,
-                    call.argument("setting"),
-                    call.argument("value")
-                )
+                dpm.setGlobalSetting(component, call.argument("setting"), call.argument("value"))
             }
             "setKeyguardDisabled" -> {
                 dpm.setKeyguardDisabled(component, call.argument("disabled")!!)
@@ -161,5 +168,7 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
     companion object {
 
         const val PLUGIN_NAME = "flutter_kiosk"
+
+        const val EMPTY_CODE = ""
     }
 }
