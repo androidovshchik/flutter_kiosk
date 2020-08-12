@@ -25,7 +25,7 @@ class UpdateService : IntentService("UpdateService") {
         }
         try {
             val url = intent?.getStringExtra("url")
-            check(!url.isNullOrBlank())
+            check(!url.isNullOrBlank()) { "Invalid url" }
             val connection = URL(url).openConnection() as HttpURLConnection
             connection.requestMethod = "HEAD"
             connection.connect()

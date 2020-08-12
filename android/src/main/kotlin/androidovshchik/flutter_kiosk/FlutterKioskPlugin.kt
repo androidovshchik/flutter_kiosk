@@ -9,6 +9,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import org.jetbrains.anko.runOnUiThread
 import org.jetbrains.anko.startService
 
 @Suppress("unused")
@@ -38,14 +39,16 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler {
                     "callback" to object : ResultReceiver(null) {
 
                         override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
-                            if (resultCode == 0) {
-                                result.success(null)
-                            } else {
-                                result.error(
-                                    resultData?.getString("code") ?: "unknown",
-                                    resultData?.getString("message"),
-                                    resultData?.getString("details")
-                                )
+                            context.runOnUiThread {
+                                if (resultCode == 0) {
+                                    result.success(null)
+                                } else {
+                                    result.error(
+                                        resultData?.getString("code") ?: "unknown",
+                                        resultData?.getString("message"),
+                                        resultData?.getString("details")
+                                    )
+                                }
                             }
                         }
                     }

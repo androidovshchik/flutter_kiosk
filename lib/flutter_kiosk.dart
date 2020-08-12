@@ -8,4 +8,10 @@ class FlutterKiosk {
   static Future<bool> get isDeviceOwner async {
     return await _channel.invokeMethod('isDeviceOwner');
   }
+
+  static Future<void> installUpdate(String url) async {
+    return await _channel.invokeMethod('installUpdate', <String, dynamic>{
+      'url': url,
+    });
+  }
 }

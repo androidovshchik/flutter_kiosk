@@ -14,19 +14,21 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _info;
+  String _message;
 
   void execute(Future<dynamic> future) async {
-    String info;
-    _info = info;
+    _message = 'Wait...';
+    String message;
     try {
-      info = (await future).toString();
+      message = (await future)?.toString();
     } on PlatformException catch (error) {
-      info = error?.message;
+      message = error?.message;
     }
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     setState(() {
-      _info = info;
+      _message = message;
     });
   }
 
@@ -43,10 +45,8 @@ class _MyAppState extends State<MyApp> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                  _info ?? 'No info',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16)
-              ),
+                  _message ?? 'No message',
+                  textAlign: TextAlign.center, style: TextStyle(fontSize: 16)),
               SizedBox(height: 16),
               RaisedButton(
                 child: Text('isDeviceOwner', style: TextStyle(fontSize: 16)),
