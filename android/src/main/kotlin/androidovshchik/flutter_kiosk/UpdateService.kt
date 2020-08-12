@@ -48,7 +48,8 @@ class UpdateService : IntentService("UpdateService") {
                         .intentSender
                 )
             }
-            sendResult(intent, 0)
+            // normally app will be terminated here
+            // sendResult(intent, 0)
         } catch (e: Throwable) {
             e.printStackTrace()
             sendResult(intent, -1, "code" to "exception", "message" to e.message, "details" to e.toString())
