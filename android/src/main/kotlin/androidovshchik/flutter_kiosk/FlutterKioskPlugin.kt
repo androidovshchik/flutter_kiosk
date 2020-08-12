@@ -1,12 +1,15 @@
 package androidovshchik.flutter_kiosk
 
 import android.content.Context
+import android.os.Bundle
+import android.os.ResultReceiver
 import androidovshchik.flutter_kiosk.extension.isDeviceOwner
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import org.jetbrains.anko.startService
 
 @Suppress("unused")
 class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler {
@@ -29,6 +32,25 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler {
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
             "isDeviceOwner" -> result.success(context.isDeviceOwner)
+            "installUpdate" -> {
+                context.startService<UpdateService>(
+                    "url" to call.argument("url"),
+                    "callback" to object : ResultReceiver(null) {
+
+                        override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
+                            if (resultCode == 0) {
+                                result.success(null)
+                            } else {
+                                result.error(
+                                    resultData?.getString("code") ?: "unknown",
+                                    resultData?.getString("message"),
+                                    resultData?.getString("details")
+                                )
+                            }
+                        }
+                    }
+                )
+            }
             else -> result.notImplemented()
         }
     }

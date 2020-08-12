@@ -7,6 +7,7 @@ import android.os.ResultReceiver
 import androidovshchik.flutter_kiosk.extension.isConnected
 import androidovshchik.flutter_kiosk.extension.isDeviceOwner
 import androidovshchik.flutter_kiosk.extension.pendingReceiverFor
+import org.jetbrains.anko.bundleOf
 import org.jetbrains.anko.connectivityManager
 import java.net.HttpURLConnection
 import java.net.URL
@@ -14,8 +15,12 @@ import java.net.URL
 class UpdateService : IntentService("UpdateService") {
 
     override fun onHandleIntent(intent: Intent?) {
-        if (!isDeviceOwner || !connectivityManager.isConnected) {
-            sendResult(intent, -1)
+        if (!isDeviceOwner) {
+            sendResult(intent, -1, "code" to "no_rights")
+            return
+        }
+        if (!connectivityManager.isConnected) {
+            sendResult(intent, -1, "code" to "no_internet")
             return
         }
         try {
@@ -46,14 +51,15 @@ class UpdateService : IntentService("UpdateService") {
             sendResult(intent, 0)
         } catch (e: Throwable) {
             e.printStackTrace()
-            sendResult(intent, -1)
+            sendResult(intent, -1, "code" to "exception", "message" to e.message, "details" to e.toString())
         }
     }
 
-    private fun sendResult(intent: Intent?, resultCode: Int = 0) {
+    @Suppress("DEPRECATION")
+    private fun sendResult(intent: Intent?, resultCode: Int, vararg params: Pair<String, Any?>) {
         if (intent?.hasExtra("callback") == true) {
             intent.getParcelableExtra<ResultReceiver>("callback")
-                .send(resultCode, null)
+                .send(resultCode, bundleOf(*params))
         }
     }
 }
