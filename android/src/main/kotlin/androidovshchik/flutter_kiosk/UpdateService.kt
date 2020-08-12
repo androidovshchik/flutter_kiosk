@@ -27,11 +27,6 @@ class UpdateService : IntentService("UpdateService") {
             val url = intent?.getStringExtra("url")
             check(!url.isNullOrBlank()) { "Invalid url" }
             val connection = URL(url).openConnection() as HttpURLConnection
-            connection.requestMethod = "HEAD"
-            connection.connect()
-            if (connection.contentType?.startsWith("application") != true) {
-                throw Exception("Invalid mime type of apk \"${connection.contentType}\"")
-            }
             val packageInstaller = packageManager.packageInstaller
             val params = SessionParams(SessionParams.MODE_FULL_INSTALL)
             params.setAppPackageName(packageName)

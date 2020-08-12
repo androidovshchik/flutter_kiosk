@@ -15,9 +15,16 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _message;
+  bool _executing;
 
   void execute(Future<dynamic> future) async {
-    _message = 'Wait...';
+    if (_executing) {
+      return;
+    }
+    _executing = true;
+    setState(() {
+      _message = 'Please, wait...';
+    });
     String message;
     try {
       message = (await future)?.toString();
@@ -30,6 +37,7 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       _message = message;
     });
+    _executing = false;
   }
 
   @override
@@ -57,7 +65,8 @@ class _MyAppState extends State<MyApp> {
               RaisedButton(
                 child: Text('installUpdate', style: TextStyle(fontSize: 16)),
                 onPressed: () {
-                  execute(FlutterKiosk.installUpdate(''));
+                  execute(FlutterKiosk.installUpdate(
+                      'https://github.com/androidovshchik/flutter_kiosk/releases/download/apk/app-release.apk'));
                 },
               ),
             ],
