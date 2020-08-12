@@ -39,7 +39,6 @@ class UpdateService : IntentService("UpdateService") {
                 )
             }
             // normally app will be terminated here
-            // sendResult(intent, 0)
         } catch (e: Throwable) {
             e.printStackTrace()
             reportError(intent, "code" to "exception", "message" to e.message, "details" to e.toString())

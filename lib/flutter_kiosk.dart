@@ -48,16 +48,12 @@ class FlutterKiosk {
     });
   }
 
-  static Future<void> addPersistentPreferredActivity(List<String> keys) async {
-    return await _channel.invokeMethod('addPersistentPreferredActivity', <String, dynamic>{
-      'keys': keys,
-    });
+  static Future<void> setPersistentPreferredActivity() async {
+    return await _channel.invokeMethod('setPersistentPreferredActivity');
   }
 
-  static Future<void> clearPersistentPreferredActivities(List<String> keys) async {
-    return await _channel.invokeMethod('clearPersistentPreferredActivities', <String, dynamic>{
-      'keys': keys,
-    });
+  static Future<void> clearPersistentPreferredActivities() async {
+    return await _channel.invokeMethod('clearPersistentPreferredActivities');
   }
 
   static Future<void> addUserRestrictions(List<String> keys) async {

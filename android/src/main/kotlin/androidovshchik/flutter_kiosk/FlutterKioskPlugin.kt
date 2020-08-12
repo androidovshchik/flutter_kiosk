@@ -3,6 +3,8 @@ package androidovshchik.flutter_kiosk
 import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.os.ResultReceiver
 import androidovshchik.flutter_kiosk.extension.isDeviceOwner
@@ -49,8 +51,10 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             result.error("no_rights", null, null)
             return
         }
+        val pm = context.packageManager
         val dpm = context.devicePolicyManager
-        val adminComponent = ComponentName(context, AdminReceiver::class.java)
+        val packageName = context.packageName
+        val component = ComponentName(context, AdminReceiver::class.java)
         when (call.method) {
             "installUpdate" -> {
                 context.startService<UpdateService>(
@@ -59,15 +63,11 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
                         override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
                             activity?.runOnUiThread {
-                                if (resultCode == 0) {
-                                    result.success(null)
-                                } else {
-                                    result.error(
-                                        resultData?.getString("code") ?: "unknown",
-                                        resultData?.getString("message"),
-                                        resultData?.getString("details")
-                                    )
-                                }
+                                result.error(
+                                    resultData?.getString("code") ?: "unknown",
+                                    resultData?.getString("message"),
+                                    resultData?.getString("details")
+                                )
                             }
                         }
                     }
@@ -80,35 +80,44 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 activity?.stopLockTask()
             }
             "toggleLockTask" -> {
-                dpm.setLockTaskPackages(adminComponent, if (call.argument("enable")!!) {
-                    arrayOf(context.packageName)
+                dpm.setLockTaskPackages(component, if (call.argument("enable")!!) {
+                    arrayOf(packageName)
                 } else {
                     emptyArray()
                 })
             }
             "setGlobalSetting" -> {
-                dpm.setGlobalSetting(adminComponent, call.argument("setting"), call.argument("value"))
+                dpm.setGlobalSetting(
+                    component,
+                    call.argument("setting"),
+                    call.argument("value")
+                )
             }
             "setKeyguardDisabled" -> {
-                dpm.setKeyguardDisabled(adminComponent, call.argument("disabled")!!)
+                dpm.setKeyguardDisabled(component, call.argument("disabled")!!)
             }
             "setStatusBarDisabled" -> {
-                dpm.setStatusBarDisabled(adminComponent, call.argument("disabled")!!)
+                dpm.setStatusBarDisabled(component, call.argument("disabled")!!)
             }
-            "addPersistentPreferredActivity" -> {
-                dpm.addPersistentPreferredActivity(adminComponent, ,)
+            "setPersistentPreferredActivity" -> {
+                val intentFilter = IntentFilter(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_HOME)
+                    addCategory(Intent.CATEGORY_DEFAULT)
+                }
+                val launchIntent = pm.getLaunchIntentForPackage(packageName)
+                dpm.addPersistentPreferredActivity(component, intentFilter, launchIntent.component)
             }
             "clearPersistentPreferredActivities" -> {
-                dpm.clearPackagePersistentPreferredActivities(adminComponent, context.packageName)
+                dpm.clearPackagePersistentPreferredActivities(component, packageName)
             }
             "addUserRestrictions" -> {
                 call.argument<List<String>>("keys")!!.forEach {
-                    dpm.addUserRestriction(adminComponent, it)
+                    dpm.addUserRestriction(component, it)
                 }
             }
             "clearUserRestrictions" -> {
                 call.argument<List<String>>("keys")!!.forEach {
-                    dpm.clearUserRestriction(adminComponent, it)
+                    dpm.clearUserRestriction(component, it)
                 }
             }
             else -> {
