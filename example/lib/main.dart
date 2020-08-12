@@ -14,8 +14,21 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  String _info;
 
-  String _info = "No info";
+  void execute(Future<dynamic> future) async {
+    String info;
+    _info = info;
+    try {
+      info = (await future).toString();
+    } on PlatformException catch (error) {
+      info = error?.message;
+    }
+    if (!mounted) return;
+    setState(() {
+      _info = info;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,30 +42,29 @@ class _MyAppState extends State<MyApp> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(_info,
-                  textAlign: TextAlign.center, style: TextStyle(fontSize: 16)),
+              Text(
+                  _info ?? 'No info',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16)
+              ),
               SizedBox(height: 16),
               RaisedButton(
                 child: Text('isDeviceOwner', style: TextStyle(fontSize: 16)),
-                onPressed: isDeviceOwner,
+                onPressed: () {
+                  execute(FlutterKiosk.isDeviceOwner);
+                },
+              ),
+              SizedBox(height: 16),
+              RaisedButton(
+                child: Text('installUpdate', style: TextStyle(fontSize: 16)),
+                onPressed: () {
+                  execute(FlutterKiosk.installUpdate(''));
+                },
               ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  Future<void> isDeviceOwner() async {
-    String info;
-    try {
-      info = (await FlutterKiosk.isDeviceOwner).toString();
-    } on PlatformException catch (error) {
-      info = error?.message ?? '';
-    }
-    if (!mounted) return;
-    setState(() {
-      _info = info;
-    });
   }
 }
