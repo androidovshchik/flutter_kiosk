@@ -1,7 +1,6 @@
 package androidovshchik.flutter_kiosk
 
 import android.app.Activity
-import android.app.ActivityManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -22,7 +21,6 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import org.jetbrains.anko.activityManager
 import org.jetbrains.anko.devicePolicyManager
 import org.jetbrains.anko.startService
 
@@ -61,9 +59,6 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     fun onActivityResumed() {
         if (hasLockTask) {
-            if (activity?.activityManager.lockTaskModeState == ActivityManager.LOCK_TASK_MODE_NONE) {
-                startLockTask()
-            }
             activity?.startLockTask()
         }
     }
@@ -86,7 +81,7 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
             "installUpdate" -> {
                 context.startService<UpdateService>(
                     "url" to call.argument("url"),
-                    "callback" to object : ResultReceiver(Handler(Looper.getMainLooper())) {
+                    "callback" to object : ResultReceiver(handler) {
 
                         override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
                             result.error(EMPTY_CODE, resultData?.getString("message"), resultData?.getString("details"))
@@ -121,14 +116,21 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
                 dpm.setStatusBarDisabled(component, call.argument("disabled")!!)
             }
             "setPersistentPreferredActivity" -> {
-                pm.getLaunchIntentForPackage(packageName)?.component?.let {
-                    pm.getLaunchIntentForPackage(packageName)?.action
-                    val intentFilter = IntentFilter(Intent.ACTION_MAIN).apply {
-                        addCategory(Intent.CATEGORY_HOME)
-                        addCategory(Intent.CATEGORY_DEFAULT)
-                    }
-                    dpm.addPersistentPreferredActivity(component, intentFilter, it)
+                val launchIntent = pm.getLaunchIntentForPackage(packageName)
+                if (launchIntent?.component == null) {
+                    result.error(EMPTY_CODE, "Launch component was not found", null)
+                    return
                 }
+                if (!launchIntent.categories.contains(Intent.CATEGORY_HOME) ||
+                    !launchIntent.categories.contains(Intent.CATEGORY_DEFAULT)) {
+                    result.error(EMPTY_CODE, "Incomplete categories for launch component", null)
+                    return
+                }
+                val intentFilter = IntentFilter(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_HOME)
+                    addCategory(Intent.CATEGORY_DEFAULT)
+                }
+                dpm.addPersistentPreferredActivity(component, intentFilter, launchIntent.component!!)
             }
             "clearPersistentPreferredActivities" -> {
                 dpm.clearPackagePersistentPreferredActivities(component, packageName)
@@ -170,5 +172,7 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
         const val PLUGIN_NAME = "flutter_kiosk"
 
         const val EMPTY_CODE = ""
+
+        private val handler = Handler(Looper.getMainLooper())
     }
 }

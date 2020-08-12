@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_kiosk/flutter_kiosk.dart';
+import 'package:flutter_kiosk/user_manager.dart' as UserManager;
+import 'package:screen/screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -15,7 +17,15 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _message;
-  bool _executing;
+  bool _executing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Screen.keepOn(true);
+    // todo remove
+    UserManager.DISALLOW_ADD_MANAGED_PROFILE;
+  }
 
   void execute(Future<dynamic> future) async {
     if (_executing) {
@@ -40,14 +50,32 @@ class _MyAppState extends State<MyApp> {
     _executing = false;
   }
 
+  void startLock() async {
+    try {
+      if (await FlutterKiosk.isDeviceOwner) {
+        await FlutterKiosk.toggleLockTask(true);
+        await FlutterKiosk.startLockTask();
+      }
+    } on PlatformException catch (error) {}
+  }
+
+  void stopLock() async {
+    try {
+      if (await FlutterKiosk.isDeviceOwner) {
+        await FlutterKiosk.stopLockTask();
+        await FlutterKiosk.toggleLockTask(false);
+      }
+    } on PlatformException catch (error) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: Text('Kiosk app'),
+          title: Text('Kiosk app', style: TextStyle(fontSize: 16)),
         ),
-        body: SingleChildScrollView(
+        body: Container(
           padding: EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -56,10 +84,13 @@ class _MyAppState extends State<MyApp> {
                   textAlign: TextAlign.center, style: TextStyle(fontSize: 16)),
               SizedBox(height: 16),
               RaisedButton(
-                child: Text('isDeviceOwner', style: TextStyle(fontSize: 16)),
-                onPressed: () {
-                  execute(FlutterKiosk.isDeviceOwner);
-                },
+                child: Text('startLock', style: TextStyle(fontSize: 16)),
+                onPressed: startLock,
+              ),
+              SizedBox(height: 16),
+              RaisedButton(
+                child: Text('stopLock', style: TextStyle(fontSize: 16)),
+                onPressed: stopLock,
               ),
               SizedBox(height: 16),
               RaisedButton(
