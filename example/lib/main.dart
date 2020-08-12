@@ -44,8 +44,7 @@ class _MyAppState extends State<MyApp> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                  _message ?? 'No message',
+              Text(_message ?? 'No message',
                   textAlign: TextAlign.center, style: TextStyle(fontSize: 16)),
               SizedBox(height: 16),
               RaisedButton(
