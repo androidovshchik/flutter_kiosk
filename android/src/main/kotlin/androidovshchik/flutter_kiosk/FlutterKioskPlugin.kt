@@ -8,6 +8,9 @@ import android.content.IntentFilter
 import android.os.Bundle
 import android.os.ResultReceiver
 import androidovshchik.flutter_kiosk.extension.isDeviceOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.OnLifecycleEvent
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -19,27 +22,38 @@ import org.jetbrains.anko.devicePolicyManager
 import org.jetbrains.anko.startService
 
 @Suppress("unused")
-class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
+class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, LifecycleObserver {
 
     private lateinit var channel: MethodChannel
 
+    private lateinit var context: Context
+
     private var activity: Activity? = null
 
-    private lateinit var context: Context
+    private var lifecycle: Lifecycle? = null
 
     @Suppress("DEPRECATION")
     override fun onAttachedToEngine(flutterBinding: FlutterPlugin.FlutterPluginBinding) {
-        channel = MethodChannel(flutterBinding.flutterEngine.dartExecutor, PLUGIN_NAME)
-        channel.setMethodCallHandler(this)
+        channel = MethodChannel(flutterBinding.flutterEngine.dartExecutor, PLUGIN_NAME).also {
+            it.setMethodCallHandler(this)
+        }
         context = flutterBinding.applicationContext
     }
 
     override fun onAttachedToActivity(activityBinding: ActivityPluginBinding) {
         activity = activityBinding.activity
+        lifecycle = (activityBinding.lifecycle as Lifecycle).also {
+            it.addObserver(this)
+        }
     }
 
     override fun onReattachedToActivityForConfigChanges(activityBinding: ActivityPluginBinding) {
         onAttachedToActivity(activityBinding)
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
+    fun onActivityResumed() {
+
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
@@ -100,12 +114,14 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 dpm.setStatusBarDisabled(component, call.argument("disabled")!!)
             }
             "setPersistentPreferredActivity" -> {
-                val intentFilter = IntentFilter(Intent.ACTION_MAIN).apply {
-                    addCategory(Intent.CATEGORY_HOME)
-                    addCategory(Intent.CATEGORY_DEFAULT)
+                pm.getLaunchIntentForPackage(packageName)?.component?.let {
+                    pm.getLaunchIntentForPackage(packageName)?.action
+                    val intentFilter = IntentFilter(Intent.ACTION_MAIN).apply {
+                        addCategory(Intent.CATEGORY_HOME)
+                        addCategory(Intent.CATEGORY_DEFAULT)
+                    }
+                    dpm.addPersistentPreferredActivity(component, intentFilter, it)
                 }
-                val launchIntent = pm.getLaunchIntentForPackage(packageName)
-                dpm.addPersistentPreferredActivity(component, intentFilter, launchIntent.component)
             }
             "clearPersistentPreferredActivities" -> {
                 dpm.clearPackagePersistentPreferredActivities(component, packageName)
@@ -133,6 +149,8 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     }
 
     override fun onDetachedFromActivity() {
+        lifecycle?.removeObserver(this)
+        lifecycle = null
         activity = null
     }
 
