@@ -1,5 +1,5 @@
 {
-  "android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION": "https://github.com/androidovshchik/flutter_kiosk/releases/download/apk/app-release.apk",
+  "android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION": "https://github.com/androidovshchik/AndroidStarter/releases/download/kiosk/app-release.apk",
   "android.app.extra.PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM": "eLZpNLsCJ6oF_FyYNjAGmxBD1nJkPLQAKSS4cHP4jqg=",
   "android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME": "androidovshchik.flutter_kiosk_example/androidovshchik.flutter_kiosk.AdminReceiver",
   "android.app.extra.PROVISIONING_LOCALE": "ru_RU",
