@@ -2,7 +2,10 @@ package androidovshchik.flutter_kiosk
 
 import android.app.Activity
 import android.content.*
+import android.content.pm.ApplicationInfo
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.ResultReceiver
 import androidovshchik.flutter_kiosk.extension.isConnected
 import androidovshchik.flutter_kiosk.extension.isDeviceOwner
@@ -34,16 +37,21 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
 
     private var lifecycle: Lifecycle? = null
 
+    @UiThread
     @Suppress("DEPRECATION")
     override fun onAttachedToEngine(flutterBinding: FlutterPlugin.FlutterPluginBinding) {
-        Timber.plant(Timber.DebugTree())
         channel = MethodChannel(flutterBinding.flutterEngine.dartExecutor, PLUGIN_NAME).also {
             it.setMethodCallHandler(this)
         }
         context = flutterBinding.applicationContext
         preferences = context.getSharedPreferences(PLUGIN_NAME, Context.MODE_PRIVATE)
+        val isDebug = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+        if (isDebug && Timber.treeCount() <= 0) {
+            Timber.plant(Timber.DebugTree())
+        }
     }
 
+    @UiThread
     override fun onAttachedToActivity(activityBinding: ActivityPluginBinding) {
         activity = activityBinding.activity
         lifecycle = (activityBinding.lifecycle as? HiddenLifecycleReference)?.lifecycle?.also {
@@ -63,8 +71,10 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
         }
     }
 
-    override fun onChanged(t: Boolean) {
-
+    override fun onChanged(value: Boolean) {
+        if (!value && hasLockTask && lifecycle?.currentState == Lifecycle.State.RESUMED) {
+            activity?.startLockTask()
+        }
     }
 
     @UiThread
@@ -88,7 +98,7 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
                 }
                 context.startService<UpdateService>(
                     "url" to call.argument("url"),
-                    "callback" to object : ResultReceiver(mainHandler) {
+                    "callback" to object : ResultReceiver(Handler(Looper.getMainLooper())) {
 
                         override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
                             result.error(EMPTY_CODE, resultData?.getString("message"), resultData?.getString("details"))
@@ -171,6 +181,7 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
         onDetachedFromActivity()
     }
 
+    @UiThread
     override fun onDetachedFromActivity() {
         lockTaskLiveData.removeFreshObserver(this)
         lifecycle?.removeObserver(this)
@@ -178,6 +189,7 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
         activity = null
     }
 
+    @UiThread
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
     }
