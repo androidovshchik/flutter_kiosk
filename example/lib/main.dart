@@ -14,6 +14,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  static const String _WAIT = 'Please, wait...';
+
   String _message;
   bool _executing = false;
 
@@ -21,8 +23,6 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     Screen.keepOn(true);
-    // todo remove
-    UserManager.DISALLOW_ADD_MANAGED_PROFILE;
   }
 
   void showMessage(String message) {
@@ -34,10 +34,19 @@ class _MyAppState extends State<MyApp> {
   }
 
   void startLock() async {
+    showMessage(_WAIT);
     try {
       if (await FlutterKiosk.isDeviceOwner) {
         await FlutterKiosk.toggleLockTask(true);
+        await FlutterKiosk.setKeyguardDisabled(true);
+        await FlutterKiosk.setStatusBarDisabled(true);
+        await FlutterKiosk.addUserRestrictions([
+          UserManager.DISALLOW_FACTORY_RESET,
+          UserManager.DISALLOW_SAFE_BOOT,
+          UserManager.DISALLOW_ADD_USER,
+        ]);
         await FlutterKiosk.startLockTask();
+        showMessage('The lock is started');
       } else {
         showMessage('This app is not a device owner');
       }
@@ -47,10 +56,19 @@ class _MyAppState extends State<MyApp> {
   }
 
   void stopLock() async {
+    showMessage(_WAIT);
     try {
       if (await FlutterKiosk.isDeviceOwner) {
         await FlutterKiosk.stopLockTask();
+        await FlutterKiosk.clearUserRestrictions([
+          UserManager.DISALLOW_FACTORY_RESET,
+          UserManager.DISALLOW_SAFE_BOOT,
+          UserManager.DISALLOW_ADD_USER,
+        ]);
+        await FlutterKiosk.setStatusBarDisabled(false);
+        await FlutterKiosk.setKeyguardDisabled(false);
         await FlutterKiosk.toggleLockTask(false);
+        showMessage('The lock is stopped');
       } else {
         showMessage('This app is not a device owner');
       }
@@ -76,23 +94,24 @@ class _MyAppState extends State<MyApp> {
               SizedBox(height: 16),
               RaisedButton(
                 child: Text('startLock', style: TextStyle(fontSize: 16)),
-                onPressed: startLock,
+                onPressed: _message != _WAIT ? startLock : null,
               ),
               SizedBox(height: 16),
               RaisedButton(
                 child: Text('stopLock', style: TextStyle(fontSize: 16)),
-                onPressed: stopLock,
+                onPressed: _message != _WAIT ? stopLock : null,
               ),
               SizedBox(height: 16),
               RaisedButton(
                 child: Text('installUpdate', style: TextStyle(fontSize: 16)),
-                onPressed: () {
+                onPressed: _message != _WAIT ? () {
+                  showMessage(_WAIT);
                   FlutterKiosk.installUpdate(
-                          'https://github.com/androidovshchik/flutter_kiosk/releases/download/apk/app-release.apk')
+                      'https://github.com/androidovshchik/flutter_kiosk/releases/download/apk/app-release.apk')
                       .catchError((e) {
                     showMessage(e?.message);
-                  }).whenComplete(() {});
-                },
+                  });
+                } : null,
               ),
             ],
           ),
