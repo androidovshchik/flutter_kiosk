@@ -39,6 +39,7 @@ class _MyAppState extends State<MyApp> {
         await FlutterKiosk.toggleLockTask(true);
         await FlutterKiosk.setKeyguardDisabled(true);
         await FlutterKiosk.setStatusBarDisabled(true);
+        await FlutterKiosk.setPersistentPreferredActivity();
         await FlutterKiosk.addUserRestrictions([
           UserManager.DISALLOW_FACTORY_RESET,
           UserManager.DISALLOW_SAFE_BOOT,
@@ -64,6 +65,7 @@ class _MyAppState extends State<MyApp> {
           UserManager.DISALLOW_SAFE_BOOT,
           UserManager.DISALLOW_ADD_USER,
         ]);
+        await FlutterKiosk.clearPersistentPreferredActivities();
         await FlutterKiosk.setStatusBarDisabled(false);
         await FlutterKiosk.setKeyguardDisabled(false);
         await FlutterKiosk.toggleLockTask(false);
