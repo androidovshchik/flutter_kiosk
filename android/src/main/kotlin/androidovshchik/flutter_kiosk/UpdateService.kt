@@ -6,6 +6,7 @@ import android.content.pm.PackageInstaller.SessionParams
 import android.os.Bundle
 import android.os.ResultReceiver
 import androidovshchik.flutter_kiosk.extension.pendingReceiverFor
+import androidx.annotation.WorkerThread
 import org.jetbrains.anko.getStackTraceString
 import timber.log.Timber
 import java.net.HttpURLConnection
@@ -13,6 +14,7 @@ import java.net.URL
 
 class UpdateService : IntentService("UpdateService") {
 
+    @WorkerThread
     override fun onHandleIntent(intent: Intent?) {
         try {
             val url = intent?.getStringExtra("url")
