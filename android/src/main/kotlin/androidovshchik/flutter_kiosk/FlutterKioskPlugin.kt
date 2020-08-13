@@ -45,6 +45,7 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
         }
         context = flutterBinding.applicationContext
         preferences = context.getSharedPreferences(PLUGIN_NAME, Context.MODE_PRIVATE)
+        hasLockTask = preferences.getBoolean(KEY_HAS_LOCK_TASK, false)
         val isDebug = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
         if (isDebug && Timber.treeCount() <= 0) {
             Timber.plant(Timber.DebugTree())
@@ -56,6 +57,9 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
         activity = activityBinding.activity
         lifecycle = (activityBinding.lifecycle as? HiddenLifecycleReference)?.lifecycle?.also {
             it.addObserver(this)
+        }
+        if (lifecycle == null) {
+            Timber.w("Suddenly lifecycle class is \"${activityBinding.lifecycle.javaClass.name}\"")
         }
         lockTaskLiveData.observeForeverFreshly(this)
     }
@@ -71,8 +75,10 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
         }
     }
 
-    override fun onChanged(value: Boolean) {
-        if (!value && hasLockTask && lifecycle?.currentState == Lifecycle.State.RESUMED) {
+    @UiThread
+    override fun onChanged(isLockTask: Boolean) {
+        if (!isLockTask && hasLockTask && lifecycle?.currentState == Lifecycle.State.RESUMED) {
+            // long press back button case
             activity?.startLockTask()
         }
     }

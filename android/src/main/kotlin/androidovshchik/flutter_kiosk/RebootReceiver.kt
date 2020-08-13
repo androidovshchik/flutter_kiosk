@@ -20,6 +20,7 @@ class RebootReceiver : BroadcastReceiver() {
             }
             val preferences = getSharedPreferences(PLUGIN_NAME, Context.MODE_PRIVATE)
             if (preferences.getBoolean(KEY_HAS_LOCK_TASK, false)) {
+                hasLockTask = true
                 packageManager.getLaunchIntentForPackage(packageName)?.let {
                     startActivity(it.newTask())
                     return
