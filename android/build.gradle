@@ -54,5 +54,6 @@ android {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation "org.jetbrains.anko:anko-sdk21:0.10.8"
+    implementation 'com.jakewharton.timber:timber:4.7.1'
     compileOnly files("$flutterRoot/bin/cache/artifacts/engine/android-x64/flutter.jar")
 }

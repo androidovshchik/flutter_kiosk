@@ -3,22 +3,17 @@ package androidovshchik.flutter_kiosk
 import android.app.IntentService
 import android.content.Intent
 import android.content.pm.PackageInstaller.SessionParams
+import android.os.Bundle
 import android.os.ResultReceiver
-import androidovshchik.flutter_kiosk.extension.isConnected
 import androidovshchik.flutter_kiosk.extension.pendingReceiverFor
-import org.jetbrains.anko.bundleOf
-import org.jetbrains.anko.connectivityManager
 import org.jetbrains.anko.getStackTraceString
+import timber.log.Timber
 import java.net.HttpURLConnection
 import java.net.URL
 
 class UpdateService : IntentService("UpdateService") {
 
     override fun onHandleIntent(intent: Intent?) {
-        if (!connectivityManager.isConnected) {
-            reportError(intent, "message" to "No internet connection")
-            return
-        }
         try {
             val url = intent?.getStringExtra("url")
             val connection = URL(url).openConnection() as HttpURLConnection
@@ -40,14 +35,12 @@ class UpdateService : IntentService("UpdateService") {
             }
             // normally app will be terminated here
         } catch (e: Throwable) {
-            e.printStackTrace()
-            reportError(intent, "message" to e.message, "details" to e.getStackTraceString())
+            Timber.e(e)
+            intent?.getParcelableExtra<ResultReceiver>("callback")
+                ?.send(-1, Bundle().apply {
+                    putString("message", e.message)
+                    putString("details", e.getStackTraceString())
+                })
         }
-    }
-
-    @Suppress("DEPRECATION")
-    private fun reportError(intent: Intent?, vararg params: Pair<String, Any?>) {
-        intent?.getParcelableExtra<ResultReceiver>("callback")
-            ?.send(-1, bundleOf(*params))
     }
 }
