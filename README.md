@@ -1,6 +1,5 @@
 # flutter_kiosk
-
-A Flutter plugin for kiosk mode in Android
+> A Flutter plugin for kiosk mode in Android
 
 Scan qr code to install example app as device owner:
 

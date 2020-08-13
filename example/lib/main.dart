@@ -105,9 +105,8 @@ class _MyAppState extends State<MyApp> {
                 child: Text('installUpdate', style: TextStyle(fontSize: 16)),
                 onPressed: _message != _WAIT ? () {
                   showMessage(_WAIT);
-                  FlutterKiosk.installUpdate(
-                                'https://github.com/androidovshchik/AndroidStarter/releases/download/kiosk/app-release.apk')
-                            .catchError((e) {
+                  FlutterKiosk.installUpdate('https://github.com/androidovshchik/AndroidStarter/releases/download/kiosk/app-release.apk')
+                      .catchError((e) {
                     showMessage(e?.message);
                   });
                 } : null,
