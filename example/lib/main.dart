@@ -17,7 +17,6 @@ class _MyAppState extends State<MyApp> {
   static const String _WAIT = 'Please, wait...';
 
   String _message;
-  bool _executing = false;
 
   @override
   void initState() {

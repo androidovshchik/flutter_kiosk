@@ -151,11 +151,6 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
                     result.error(EMPTY_CODE, "Launch component was not found", null)
                     return
                 }
-                if (!launchIntent.categories.contains(Intent.CATEGORY_HOME) ||
-                    !launchIntent.categories.contains(Intent.CATEGORY_DEFAULT)) {
-                    result.error(EMPTY_CODE, "Incomplete categories for launch component", null)
-                    return
-                }
                 val intentFilter = IntentFilter(Intent.ACTION_MAIN).apply {
                     addCategory(Intent.CATEGORY_HOME)
                     addCategory(Intent.CATEGORY_DEFAULT)
