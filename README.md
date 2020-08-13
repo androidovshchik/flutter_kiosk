@@ -2,6 +2,10 @@
 
 A Flutter plugin for kiosk mode in Android
 
+Scan qr code to install example as device owner:
+
+<img width="300" src="qr-code.gif"/>
+
 ## Getting Started
 
 To set device owner with command line:
