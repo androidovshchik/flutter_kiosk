@@ -2,6 +2,7 @@ package androidovshchik.flutter_kiosk
 
 import android.os.Handler
 import android.os.Looper
+import androidx.lifecycle.MutableLiveData
 
 const val PLUGIN_NAME = "flutter_kiosk"
 
@@ -11,4 +12,6 @@ const val EMPTY_CODE = ""
 
 var hasLockTask = false
 
-val handler = Handler(Looper.getMainLooper())
+val mainHandler = Handler(Looper.getMainLooper())
+
+val lockTaskLiveData = MutableLiveData<Boolean>()
