@@ -18,6 +18,7 @@ class UpdateService : IntentService("UpdateService") {
     override fun onHandleIntent(intent: Intent?) {
         try {
             val url = intent?.getStringExtra("url")
+            require(!url.isNullOrBlank()) { "Invalid url" }
             val connection = URL(url).openConnection() as HttpURLConnection
             val packageInstaller = packageManager.packageInstaller
             val params = SessionParams(SessionParams.MODE_FULL_INSTALL)

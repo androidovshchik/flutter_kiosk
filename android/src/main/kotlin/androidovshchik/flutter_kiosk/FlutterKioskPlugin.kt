@@ -1,55 +1,55 @@
 package androidovshchik.flutter_kiosk
 
 import android.app.Activity
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.content.*
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.os.ResultReceiver
+import androidovshchik.flutter_kiosk.extension.isConnected
 import androidovshchik.flutter_kiosk.extension.isDeviceOwner
 import androidx.annotation.UiThread
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.OnLifecycleEvent
+import androidx.lifecycle.*
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import io.flutter.embedding.engine.plugins.lifecycle.HiddenLifecycleReference
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import org.jetbrains.anko.connectivityManager
 import org.jetbrains.anko.devicePolicyManager
 import org.jetbrains.anko.startService
+import timber.log.Timber
 
 @Suppress("unused")
-class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, LifecycleObserver {
+class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, LifecycleObserver, Observer<Boolean> {
 
     private lateinit var channel: MethodChannel
 
     private lateinit var context: Context
 
+    private lateinit var preferences: SharedPreferences
+
     private var activity: Activity? = null
 
     private var lifecycle: Lifecycle? = null
 
-    private var hasLockTask = false
-
     @Suppress("DEPRECATION")
     override fun onAttachedToEngine(flutterBinding: FlutterPlugin.FlutterPluginBinding) {
+        Timber.plant(Timber.DebugTree())
         channel = MethodChannel(flutterBinding.flutterEngine.dartExecutor, PLUGIN_NAME).also {
             it.setMethodCallHandler(this)
         }
         context = flutterBinding.applicationContext
+        preferences = context.getSharedPreferences(PLUGIN_NAME, Context.MODE_PRIVATE)
     }
 
     override fun onAttachedToActivity(activityBinding: ActivityPluginBinding) {
         activity = activityBinding.activity
-        lifecycle = (activityBinding.lifecycle as Lifecycle).also {
+        lifecycle = (activityBinding.lifecycle as? HiddenLifecycleReference)?.lifecycle?.also {
             it.addObserver(this)
         }
+        lockTaskLiveData.observeForeverFreshly(this)
     }
 
     override fun onReattachedToActivityForConfigChanges(activityBinding: ActivityPluginBinding) {
@@ -63,6 +63,10 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
         }
     }
 
+    override fun onChanged(t: Boolean) {
+
+    }
+
     @UiThread
     override fun onMethodCall(call: MethodCall, result: Result) {
         val isDeviceOwner = context.isDeviceOwner
@@ -73,15 +77,18 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
             result.error(EMPTY_CODE, "This app is not a device owner", null)
             return
         }
-        val pm = context.packageManager
         val dpm = context.devicePolicyManager
         val packageName = context.packageName
         val component = ComponentName(context, AdminReceiver::class.java)
         when (call.method) {
             "installUpdate" -> {
+                if (!context.connectivityManager.isConnected) {
+                    result.error(EMPTY_CODE, "No internet connection", null)
+                    return
+                }
                 context.startService<UpdateService>(
                     "url" to call.argument("url"),
-                    "callback" to object : ResultReceiver(handler) {
+                    "callback" to object : ResultReceiver(mainHandler) {
 
                         override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
                             result.error(EMPTY_CODE, resultData?.getString("message"), resultData?.getString("details"))
@@ -95,10 +102,16 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
                 if (lifecycle?.currentState == Lifecycle.State.RESUMED) {
                     activity?.startLockTask()
                 }
+                preferences.edit()
+                    .putBoolean(KEY_HAS_LOCK_TASK, true)
+                    .apply()
             }
             "stopLockTask" -> {
                 hasLockTask = false
                 activity?.stopLockTask()
+                preferences.edit()
+                    .putBoolean(KEY_HAS_LOCK_TASK, false)
+                    .apply()
             }
             "toggleLockTask" -> {
                 dpm.setLockTaskPackages(component, if (call.argument("enable")!!) {
@@ -117,7 +130,7 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
                 dpm.setStatusBarDisabled(component, call.argument("disabled")!!)
             }
             "setPersistentPreferredActivity" -> {
-                val launchIntent = pm.getLaunchIntentForPackage(packageName)
+                val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
                 if (launchIntent?.component == null) {
                     result.error(EMPTY_CODE, "Launch component was not found", null)
                     return
@@ -159,6 +172,7 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
     }
 
     override fun onDetachedFromActivity() {
+        lockTaskLiveData.removeFreshObserver(this)
         lifecycle?.removeObserver(this)
         lifecycle = null
         activity = null
@@ -166,14 +180,5 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
-    }
-
-    companion object {
-
-        const val PLUGIN_NAME = "flutter_kiosk"
-
-        const val EMPTY_CODE = ""
-
-        private val handler = Handler(Looper.getMainLooper())
     }
 }
