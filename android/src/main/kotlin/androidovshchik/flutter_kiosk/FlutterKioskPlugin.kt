@@ -78,16 +78,22 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     fun onActivityResumed() {
-        if (hasLockTask) {
-            activity?.startLockTask()
+        try {
+            if (hasLockTask) {
+                activity?.startLockTask()
+            }
+        } catch (ignored: Throwable) {
         }
     }
 
     @UiThread
     override fun onChanged(isLockTask: Boolean) {
-        if (!isLockTask && hasLockTask && lifecycle?.currentState == Lifecycle.State.RESUMED) {
-            // long press back button case
-            activity?.startLockTask()
+        try {
+            if (!isLockTask && hasLockTask && lifecycle?.currentState == Lifecycle.State.RESUMED) {
+                // long press back button case
+                activity?.startLockTask()
+            }
+        } catch (ignored: Throwable) {
         }
     }
 
