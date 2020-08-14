@@ -19,6 +19,7 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import org.jetbrains.anko.connectivityManager
 import org.jetbrains.anko.devicePolicyManager
+import org.jetbrains.anko.getStackTraceString
 import org.jetbrains.anko.startService
 import timber.log.Timber
 import kotlin.system.exitProcess
@@ -112,86 +113,92 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
         val dpm = context.devicePolicyManager
         val packageName = context.packageName
         val component = ComponentName(context, AdminReceiver::class.java)
-        when (call.method) {
-            "installUpdate" -> {
-                if (!context.connectivityManager.isConnected) {
-                    result.error(EMPTY_CODE, "No internet connection", null)
-                    return
-                }
-                context.startService<UpdateService>(
-                    "url" to call.argument("url"),
-                    "callback" to object : ResultReceiver(Handler(Looper.getMainLooper())) {
-
-                        override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
-                            result.error(EMPTY_CODE, resultData?.getString("message"), resultData?.getString("details"))
-                        }
+        try {
+            when (call.method) {
+                "installUpdate" -> {
+                    if (!context.connectivityManager.isConnected) {
+                        result.error(EMPTY_CODE, "No internet connection", null)
+                        return
                     }
-                )
-                return
-            }
-            "startLockTask" -> {
-                hasLockTask = true
-                if (lifecycle?.currentState == Lifecycle.State.RESUMED) {
-                    activity?.startLockTask()
-                }
-                preferences.edit()
-                    .putBoolean(KEY_HAS_LOCK_TASK, true)
-                    .apply()
-            }
-            "stopLockTask" -> {
-                hasLockTask = false
-                activity?.stopLockTask()
-                preferences.edit()
-                    .putBoolean(KEY_HAS_LOCK_TASK, false)
-                    .apply()
-            }
-            "toggleLockTask" -> {
-                dpm.setLockTaskPackages(component, if (call.argument("enable")!!) {
-                    arrayOf(packageName)
-                } else {
-                    emptyArray()
-                })
-            }
-            "setGlobalSetting" -> {
-                dpm.setGlobalSetting(component, call.argument("setting"), call.argument("value"))
-            }
-            "setKeyguardDisabled" -> {
-                dpm.setKeyguardDisabled(component, call.argument("disabled")!!)
-            }
-            "setStatusBarDisabled" -> {
-                dpm.setStatusBarDisabled(component, call.argument("disabled")!!)
-            }
-            "setPersistentPreferredActivity" -> {
-                val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
-                if (launchIntent?.component == null) {
-                    result.error(EMPTY_CODE, "Launch component was not found", null)
+                    context.startService<UpdateService>(
+                        "url" to call.argument("url"),
+                        "callback" to object : ResultReceiver(Handler(Looper.getMainLooper())) {
+
+                            override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
+                                result.error(EMPTY_CODE, resultData?.getString("message"),
+                                    resultData?.getString("details"))
+                            }
+                        }
+                    )
                     return
                 }
-                val intentFilter = IntentFilter(Intent.ACTION_MAIN).apply {
-                    addCategory(Intent.CATEGORY_HOME)
-                    addCategory(Intent.CATEGORY_DEFAULT)
+                "startLockTask" -> {
+                    hasLockTask = true
+                    if (lifecycle?.currentState == Lifecycle.State.RESUMED) {
+                        activity?.startLockTask()
+                    }
+                    preferences.edit()
+                        .putBoolean(KEY_HAS_LOCK_TASK, true)
+                        .apply()
                 }
-                dpm.addPersistentPreferredActivity(component, intentFilter, launchIntent.component!!)
-            }
-            "clearPersistentPreferredActivities" -> {
-                dpm.clearPackagePersistentPreferredActivities(component, packageName)
-            }
-            "addUserRestrictions" -> {
-                call.argument<List<String>>("keys")!!.forEach {
-                    dpm.addUserRestriction(component, it)
+                "stopLockTask" -> {
+                    hasLockTask = false
+                    activity?.stopLockTask()
+                    preferences.edit()
+                        .putBoolean(KEY_HAS_LOCK_TASK, false)
+                        .apply()
+                }
+                "toggleLockTask" -> {
+                    dpm.setLockTaskPackages(component, if (call.argument("enable")!!) {
+                        arrayOf(packageName)
+                    } else {
+                        emptyArray()
+                    })
+                }
+                "setGlobalSetting" -> {
+                    dpm.setGlobalSetting(component, call.argument("setting"), call.argument("value"))
+                }
+                "setKeyguardDisabled" -> {
+                    dpm.setKeyguardDisabled(component, call.argument("disabled")!!)
+                }
+                "setStatusBarDisabled" -> {
+                    dpm.setStatusBarDisabled(component, call.argument("disabled")!!)
+                }
+                "setPersistentPreferredActivity" -> {
+                    val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
+                    if (launchIntent?.component == null) {
+                        result.error(EMPTY_CODE, "Launch component was not found", null)
+                        return
+                    }
+                    val intentFilter = IntentFilter(Intent.ACTION_MAIN).apply {
+                        addCategory(Intent.CATEGORY_HOME)
+                        addCategory(Intent.CATEGORY_DEFAULT)
+                    }
+                    dpm.addPersistentPreferredActivity(component, intentFilter, launchIntent.component!!)
+                }
+                "clearPersistentPreferredActivities" -> {
+                    dpm.clearPackagePersistentPreferredActivities(component, packageName)
+                }
+                "addUserRestrictions" -> {
+                    call.argument<List<String>>("keys")!!.forEach {
+                        dpm.addUserRestriction(component, it)
+                    }
+                }
+                "clearUserRestrictions" -> {
+                    call.argument<List<String>>("keys")!!.forEach {
+                        dpm.clearUserRestriction(component, it)
+                    }
+                }
+                else -> {
+                    result.notImplemented()
+                    return
                 }
             }
-            "clearUserRestrictions" -> {
-                call.argument<List<String>>("keys")!!.forEach {
-                    dpm.clearUserRestriction(component, it)
-                }
-            }
-            else -> {
-                result.notImplemented()
-                return
-            }
+            result.success(null)
+        } catch (e: Throwable) {
+            Timber.e(e)
+            result.error(EMPTY_CODE, e.message, e.getStackTraceString())
         }
-        result.success(null)
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
