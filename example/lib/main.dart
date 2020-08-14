@@ -21,6 +21,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+    /// requires permission WAKE_LOCK
     Screen.keepOn(true);
     SystemChrome.setEnabledSystemUIOverlays([]);
   }
@@ -112,6 +113,14 @@ class _MyAppState extends State<MyApp> {
                       .catchError((e) {
                     showMessage(e?.message);
                   });
+                } : null,
+              ),
+              SizedBox(height: 16),
+              RaisedButton(
+                child: Text('throwError', style: TextStyle(fontSize: 16)),
+                onPressed: _message != _WAIT ? () {
+                  /// Do not call this in production XD
+                  FlutterKiosk.throwError();
                 } : null,
               ),
             ],

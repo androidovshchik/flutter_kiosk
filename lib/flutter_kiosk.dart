@@ -48,6 +48,11 @@ class FlutterKiosk {
     });
   }
 
+  // ignore: slash_for_doc_comments
+  /**
+    You still need to declare the intent filter in your app manifest file as shown in the following XML snippet:
+    @see https://developer.android.com/work/dpc/dedicated-devices/cookbook#be_the_home_app
+   */
   static Future<void> setPersistentPreferredActivity() async {
     return await _channel.invokeMethod('setPersistentPreferredActivity');
   }
@@ -66,5 +71,10 @@ class FlutterKiosk {
     return await _channel.invokeMethod('clearUserRestrictions', <String, dynamic>{
       'keys': keys,
     });
+  }
+
+  /// Do not call this in production XD
+  static Future<void> throwError() async {
+    return await _channel.invokeMethod('throwError');
   }
 }

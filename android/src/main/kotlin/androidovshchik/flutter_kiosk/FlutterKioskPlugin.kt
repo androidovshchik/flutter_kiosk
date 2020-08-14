@@ -93,12 +93,21 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
     @UiThread
     override fun onMethodCall(call: MethodCall, result: Result) {
         val isDeviceOwner = context.isDeviceOwner
-        if (call.method == "isDeviceOwner") {
-            result.success(isDeviceOwner)
-            return
-        } else if (!isDeviceOwner) {
-            result.error(EMPTY_CODE, "This app is not a device owner", null)
-            return
+        when {
+            call.method == "isDeviceOwner" -> {
+                result.success(isDeviceOwner)
+                return
+            }
+            call.method == "throwError" -> {
+                Handler().post {
+                    throw Throwable("WTF")
+                }
+                return
+            }
+            !isDeviceOwner -> {
+                result.error(EMPTY_CODE, "This app is not a device owner", null)
+                return
+            }
         }
         val dpm = context.devicePolicyManager
         val packageName = context.packageName
