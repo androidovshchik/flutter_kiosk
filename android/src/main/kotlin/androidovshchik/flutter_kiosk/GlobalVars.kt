@@ -8,6 +8,8 @@ const val KEY_HAS_LOCK_TASK = "has_lock_task"
 
 const val EMPTY_CODE = ""
 
+var hasExceptionHandler = false
+
 var hasLockTask = false
 
 val lockTaskLiveData = MutableLiveData<Boolean>()

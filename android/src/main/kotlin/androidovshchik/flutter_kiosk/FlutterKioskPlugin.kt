@@ -3,10 +3,8 @@ package androidovshchik.flutter_kiosk
 import android.app.Activity
 import android.content.*
 import android.content.pm.ApplicationInfo
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.ResultReceiver
+import android.os.*
+import androidovshchik.flutter_kiosk.extension.createAlarm
 import androidovshchik.flutter_kiosk.extension.isConnected
 import androidovshchik.flutter_kiosk.extension.isDeviceOwner
 import androidx.annotation.UiThread
@@ -23,6 +21,7 @@ import org.jetbrains.anko.connectivityManager
 import org.jetbrains.anko.devicePolicyManager
 import org.jetbrains.anko.startService
 import timber.log.Timber
+import kotlin.system.exitProcess
 
 @Suppress("unused")
 class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, LifecycleObserver, Observer<Boolean> {
@@ -40,6 +39,14 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
     @UiThread
     @Suppress("DEPRECATION")
     override fun onAttachedToEngine(flutterBinding: FlutterPlugin.FlutterPluginBinding) {
+        if (!hasExceptionHandler) {
+            hasExceptionHandler = true
+            Thread.setDefaultUncaughtExceptionHandler { _, _ ->
+                context.createAlarm<RestartReceiver>(0L)
+                Process.killProcess(Process.myPid())
+                exitProcess(-1)
+            }
+        }
         channel = MethodChannel(flutterBinding.flutterEngine.dartExecutor, PLUGIN_NAME).also {
             it.setMethodCallHandler(this)
         }
