@@ -1,5 +1,6 @@
 package androidovshchik.flutter_kiosk
 
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -10,6 +11,7 @@ import timber.log.Timber
 
 class RestartReceiver : BroadcastReceiver() {
 
+    @SuppressLint("UnsafeProtectedBroadcastReceiver")
     override fun onReceive(context: Context, intent: Intent?) {
         with(context) {
             if (activityManager.getBaseActivity(packageName) != null) {
