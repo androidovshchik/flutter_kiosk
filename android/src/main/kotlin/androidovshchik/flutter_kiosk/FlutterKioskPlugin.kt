@@ -100,7 +100,7 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
             }
             call.method == "throwError" -> {
                 Handler().post {
-                    throw Throwable("WTF")
+                    throw Throwable("Hello world!")
                 }
                 return
             }
