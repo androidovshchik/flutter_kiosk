@@ -22,6 +22,7 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     Screen.keepOn(true);
+    SystemChrome.setEnabledSystemUIOverlays([]);
   }
 
   void showMessage(String message) {
