@@ -117,6 +117,20 @@ class _MyAppState extends State<MyApp> {
               ),
               SizedBox(height: 16),
               RaisedButton(
+                child: Text('removeAdmin', style: TextStyle(fontSize: 16)),
+                onPressed: _message != _WAIT ? () {
+                  showMessage(_WAIT);
+                  FlutterKiosk.clearDeviceOwner()
+                      .then((value) {
+                    showMessage("Now this app is not a device owner");
+                  })
+                      .catchError((e) {
+                    showMessage(e?.message);
+                  });
+                } : null,
+              ),
+              SizedBox(height: 16),
+              RaisedButton(
                 child: Text('throwError', style: TextStyle(fontSize: 16)),
                 onPressed: _message != _WAIT ? () {
                   /// Do not call this in production XD

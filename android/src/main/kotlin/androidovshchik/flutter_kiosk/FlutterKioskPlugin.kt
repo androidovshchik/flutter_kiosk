@@ -195,6 +195,9 @@ class FlutterKioskPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Life
                         dpm.clearUserRestriction(component, it)
                     }
                 }
+                "clearDeviceOwner" -> {
+                    dpm.clearDeviceOwnerApp(packageName)
+                }
                 else -> {
                     result.notImplemented()
                     return

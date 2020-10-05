@@ -73,6 +73,10 @@ class FlutterKiosk {
     });
   }
 
+  static Future<void> clearDeviceOwner() async {
+    return await _channel.invokeMethod('clearDeviceOwner');
+  }
+
   /// Do not call this in production XD
   static Future<void> throwError() async {
     return await _channel.invokeMethod('throwError');
